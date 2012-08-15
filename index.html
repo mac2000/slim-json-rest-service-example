@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Slim Example</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.0.4/css/bootstrap-combined.min.css" />
+    <style>.container{margin:1em auto}</style>
+</head>
+<body>
+    <div class="container">
+        <table class="table table-striped table-bordered table-condensed">
+            <thead>
+                <tr>
+                    <th>name</th>
+                    <th>email</th>
+                    <th>age</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: users">
+                <tr>
+                    <td data-bind="text: name"></td>
+                    <td data-bind="text: email"></td>
+                    <td data-bind="text: age"></td>
+                    <td>
+                        <button data-bind="click: $root.edit" class="btn btn-mini"><i class="icon-edit"></i></button>
+                        <button data-bind="click: $root.del" class="btn btn-mini"><i class="icon-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <form class="form-horizontal">
+            <input data-bind="value: id" type="hidden" name="id" />
+            <div class="control-group">
+                <label class="control-label" for="name">Name</label>
+                <div class="controls">
+                    <input data-bind="value: name" type="text" name="name" placeholder="full or nick name" required />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="email">Email</label>
+                <div class="controls">
+                    <input data-bind="value: email" type="email" name="email" placeholder="user@example.com" required />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="age">Age</label>
+                <div class="controls">
+                    <input data-bind="value: age" type="number" name="age" placeholder="your age" min="0" max="999" required />
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Submit</button>
+            </div>
+        </form>
+    </div>
+    <form class="form-inline modal hide" id="auth">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h3>Auth</h3>
+        </div>
+        <div class="modal-body">
+            <input name="login" type="text" placeholder="login" required>
+            <input name="password" type="password" placeholder="password" required>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Login</button>
+            <a href="#" class="btn" data-dismiss="modal">Close</a>
+        </div>
+    </form>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="//cloud.github.com/downloads/SteveSanderson/knockout/knockout-2.1.0.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.0.4/js/bootstrap.min.js"></script>
+    <script>
+        // Helpers
+        ;(function(window, document, $, undefined){
+            // Notification
+            var container = $('.container');
+            $.extend({
+                notify: function(message, success) {
+                    success = success || false;
+                    var cls = success ? 'alert-success' : 'alert-error';
+                    container.prepend('<div class="alert ' + cls + '"><button type="button" class="close" data-dismiss="alert">&times;</button>' + message + '</div>');
+                    $('.alert').alert();
+                }
+            });
+
+            // Auth
+            var login = $('#auth input[type=text]:first');
+            var password = $('#auth input[type=password]:first');
+            $('#auth').submit(function(){
+                $.ajax({
+                    type: 'POST',
+                    contentType: 'application/json',
+                    url: '/slim/api/login',
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        login: login.val(),
+                        password: password.val()
+                    }),
+                    success: function(data){
+                        $.notify('Logged in', true);
+                        $('#auth').modal('hide');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        $.notify(jqXHR.responseText || jqXHR.statusText, false);
+                        $('#auth').modal('hide');
+                    }
+                });
+                return false;
+            });
+        })(window, document, jQuery);
+    </script>
+    <script>
+        /**
+         * Usage examples:
+         * var users = $.restInterfaceTo('/slim/api/users');
+         * users.all(console.log);
+         * users.one(1, console.log);
+         * users.add({name: 'Alex', mail: 'alex@example.com', age: 27}, console.log);
+         * users.put(3, {name: 'alex', mail: 'alex@gmail.com', age: 23}, console.log);
+         * users.del(3, console.log);
+         */
+        ;(function(window, document, $, undefined){
+            $.extend({
+                restInterfaceTo: function(url) {
+                    if(!url) $.error('URL is required');
+
+                    return {
+                        url: url,
+                        all: function(success, error) {
+                            $.ajax({
+                                type: 'GET',
+                                url: url,
+                                dataType: 'json',
+                                success: success,
+                                error: error
+                            });
+                        },
+                        one: function(id, success, error) {
+                            $.ajax({
+                                type: 'GET',
+                                url: url + '/' + id,
+                                dataType: 'json',
+                                success: success,
+                                error: error
+                            });
+                        },
+                        add: function(data, success, error) {
+                            $.ajax({
+                                type: 'POST',
+                                contentType: 'application/json',
+                                url: url,
+                                dataType: 'json',
+                                data: JSON.stringify(data),
+                                success: success,
+                                error: error
+                            });
+                        },
+                        put: function(id, data, success, error) {
+                            $.ajax({
+                                type: 'PUT',
+                                contentType: 'application/json',
+                                url: url + '/' + id,
+                                dataType: 'json',
+                                data: JSON.stringify(data),
+                                success: success,
+                                error: error
+                            });
+                        },
+                        del: function(id, success, error) {
+                            $.ajax({
+                                type: 'DELETE',
+                                url: url + '/' + id,
+                                dataType: 'json',
+                                success: success,
+                                error: error
+                            });
+                        }
+                    };
+                }
+            });
+        })(window, document, jQuery);
+    </script>
+    <script>
+        // TESTS
+        /*
+        (function($){
+            var users = $.restInterfaceTo('/slim/api/users');
+            users.all(function(items){
+                console.log('Users', items);
+
+                // Delete all users with id > 2 and wait for all calls to complete before trying to add new user
+                $.when.apply($, $.map(items, function(item){
+                    if(item.id > 2) users.del(item.id, function(response){
+                        console.log('Deleted', item);
+                    });
+                })).done(function(){
+                    users.add({name: 'Test', email: 'test@example.com', age: 27}, function(item){
+                        console.log('Added', item);
+                        item.age = 12;
+                        users.put(item.id, item, function(item){
+                            console.log('Updated', item);
+                        });
+                    });
+                });
+
+            });
+        })(jQuery);
+        */
+    </script>
+    <script>
+        ;(function(window, document, $, ko, undefined){
+            function UsersViewModel() {
+                var self = this;
+
+                self.rest = $.restInterfaceTo('/slim/api/users');
+
+                self.users = ko.observableArray();
+
+                self.id = ko.observable();
+                self.name = ko.observable();
+                self.email = ko.observable();
+                self.age = ko.observable();
+
+                self.del = function(user) {
+                    self.rest.del(user.id, function(data){
+                        self.id(null);
+                        self.name(null);
+                        self.email(null);
+                        self.age(null);
+
+                        $.notify(user.name + ' successfully deleted', true);
+                        self.refresh();
+                    }, function(jqXHR, textStatus, errorThrown){
+                        if(jqXHR.status == 403) $('#auth').modal();
+                        else $.notify(jqXHR.responseText || jqXHR.statusText, false);
+                    });
+                };
+
+                self.edit = function(user) {
+                    self.id(user.id);
+                    self.name(user.name);
+                    self.email(user.email);
+                    self.age(user.age);
+                };
+
+                self.refresh = function() {
+                    self.rest.all(function(items){
+                        self.users(items);
+                        $.notify('Refresh done, ' + items.length + ' loaded', true);
+                    }, function(jqXHR, textStatus, errorThrown){
+                        $.notify(jqXHR.responseText || jqXHR.statusText, false);
+                    });
+                };
+
+            $('.container form').submit(function(){
+                var id = self.id();
+                var user = {
+                    name: self.name(),
+                    email: self.email(),
+                    age: self.age()
+                };
+                if(id) {
+                    user.id = id;
+                    self.rest.put(id, user, function(item){
+                        $.notify(item.name + ' successfully updated', true);
+                        self.refresh();
+                    }, function(jqXHR, textStatus, errorThrown){
+                        if(jqXHR.status == 403) $('#auth').modal();
+                        else $.notify(jqXHR.responseText || jqXHR.statusText, false);
+                    });
+                }
+                else {
+                    self.rest.add(user, function(item){
+                        $.notify(item.name + ' successfully added', true);
+                        self.id(item.id);
+                        self.refresh();
+                    }, function(jqXHR, textStatus, errorThrown){
+                        if(jqXHR.status == 403) $('#auth').modal();
+                        else $.notify(jqXHR.responseText || jqXHR.statusText, false);
+                    });
+                }
+
+                return false;
+            });
+                self.refresh();
+            }
+            var model = new UsersViewModel();
+            ko.applyBindings(model);
+        })(window, document, jQuery, ko);
+    </script>
+</body>
+</html>
